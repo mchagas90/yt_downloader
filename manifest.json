@@ -1,0 +1,13 @@
+{
+  "manifest_version": 2,
+
+  "name": "YT DOWNLOADER MP3",
+  "description": "Let's download mp3?",
+  "version": "1.0",
+
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "yt_downloader.html"
+  },
+  "permissions": ["activeTab", "tabs", "http://*/", "https://*/"]
+}
