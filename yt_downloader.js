@@ -1,6 +1,6 @@
-function renderStatus(url) {
-  var download = document.getElementById('download');
-  download.textContent = url;
+function renderMessage(message) {
+  var message_label = document.getElementById('message');
+  message_label.textContent = message;
 }
 
 function getCurrentTabUrl(callback) {
@@ -27,39 +27,49 @@ var HttpClient = function() {
     httpRequest.onreadystatechange = function () {
       if(httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
         var response = JSON.parse(httpRequest.responseText);
-        callback(response);
+        callback(response, url);
       }
     };
     httpRequest.send();
   }
 }
 
+function handleResponse(response, url){
+  // var code = "console.log(" + JSON.stringify(response) + ")"
+  // chrome.tabs.executeScript({
+  //   code: code
+  // });
+  var response_status = response.status
+  var response_url = response.url;
+  var response_ready = response.ready;
+
+  if(response_url != 'undefined' && response_ready === true) {
+    renderMessage("BAIXANDO!")
+    startDownload(response_url);
+  } else if (response_status === 'error') {
+    renderMessage("Esse vídeo não pode ser convertido.");
+  }
+  else {
+    renderMessage("Convertendo... pera aeee!");
+    var client = new HttpClient();
+    setTimeout(function() { client.get(url, handleResponse); }, 5000);
+  }
+}
+
+function startDownload(response_url){
+  var code = "window.location.assign(\"http:" + response_url + "\");"
+  chrome.tabs.executeScript({
+    code: code
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   getCurrentTabUrl(function(url) {
-
     var youtube_id = url.match(/\=.*&*/)[0].replace(/[=&]+/g, '');
     var api_url = "http://www.yt-mp3.com/fetch?v="+youtube_id+"&apikey=1234567";
 
     client = new HttpClient();
-    client.get(api_url, function(response) {
-      response_url = response.url
-      var code = "window.location.assign(\"http:" + response_url + "\");"
+    client.get(api_url, handleResponse);
 
-      chrome.tabs.executeScript({
-        code: "console.log(" + JSON.stringify(response) + ")"
-      });
-
-      response_ready = response.ready;
-
-      if(response_url != 'undefined' && response_ready === true) {
-        renderStatus("BAIXANDO!")
-        chrome.tabs.executeScript({
-          code: code
-        });
-      } else {
-        renderStatus("Coeh, deu ruim, tenta de novo daqui a pouco!")
-      }
-
-    });
   });
 });
