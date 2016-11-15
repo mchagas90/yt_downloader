@@ -1,5 +1,6 @@
 function renderMessage(message) {
   var message_label = document.getElementById('message');
+  message_label.className = 'status';
   message_label.textContent = message;
 }
 
@@ -13,8 +14,6 @@ function getCurrentTabUrl(callback) {
     var tab = tabs[0];
     var url = tab.url;
 
-    // console.assert(typeof url == 'string', 'tab.url should be a string');
-
     callback(url);
   });
 }
@@ -23,10 +22,11 @@ var HttpClient = function() {
   this.get = function(url, callback) {
     var httpRequest = new XMLHttpRequest();
 
-    httpRequest.open('GET', url, false);
+    httpRequest.open('GET', url, true);
     httpRequest.onreadystatechange = function () {
       if(httpRequest.readyState === XMLHttpRequest.DONE && httpRequest.status === 200) {
-        var response = JSON.parse(httpRequest.responseText);
+        // var response = JSON.parse(httpRequest.responseText);
+        var response = httpRequest.responseText;
         callback(response, url);
       }
     };
@@ -35,29 +35,25 @@ var HttpClient = function() {
 }
 
 function handleResponse(response, url){
-  // var code = "console.log(" + JSON.stringify(response) + ")"
-  // chrome.tabs.executeScript({
-  //   code: code
-  // });
-  var response_status = response.status
-  var response_url = response.url;
-  var response_ready = response.ready;
+  var code = "console.log(" + JSON.stringify(response) + ")"
+  chrome.tabs.executeScript({
+    code: code
+  });
 
-  if(response_url != 'undefined' && response_ready === true) {
-    renderMessage("BAIXANDO!")
-    startDownload(response_url);
-  } else if (response_status === 'error') {
-    renderMessage("Esse vídeo não pode ser convertido.");
-  }
-  else {
-    renderMessage("Convertendo... pera aeee!");
+  var parsed_response = response.split("|");
+  if(parsed_response[0] != "OK" ){
     var client = new HttpClient();
-    setTimeout(function() { client.get(url, handleResponse); }, 5000);
+    return setTimeout(function() { client.get(url, handleResponse); }, 5e3);
+  } else {
+    renderMessage("BAIXANDO!");
+    var download_link = "http://dl" + parsed_response[1] + ".downloader.space/dl.php?id=" + parsed_response[2];
+    startDownload(download_link);
   }
 }
 
 function startDownload(response_url){
-  var code = "window.location.assign(\"http:" + response_url + "\");"
+  // var code = "window.location.assign(\"http:" + response_url + "\");"
+  var code = "window.location.assign(\"" + response_url + "\");"
   chrome.tabs.executeScript({
     code: code
   });
@@ -66,10 +62,15 @@ function startDownload(response_url){
 document.addEventListener('DOMContentLoaded', function() {
   getCurrentTabUrl(function(url) {
     var youtube_id = url.match(/\=.*&*/)[0].replace(/[=&]+/g, '');
-    var api_url = "http://www.yt-mp3.com/fetch?v="+youtube_id+"&apikey=1234567";
+
+    var api_url = 
+      "http://api.convert2mp3.cc/check.php?api=true&v="
+      + youtube_id
+      + "&h="
+      + Math.floor(35e5 * Math.random());
+
 
     client = new HttpClient();
     client.get(api_url, handleResponse);
-
   });
 });
