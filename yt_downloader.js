@@ -61,7 +61,8 @@ function startDownload(response_url){
 
 document.addEventListener('DOMContentLoaded', function() {
   getCurrentTabUrl(function(url) {
-    var youtube_id = url.match(/\=.*&*/)[0].replace(/[=&]+/g, '');
+    // var youtube_id = url.match(/\=.*&*/)[0].replace(/[=&]+/g, '');
+    var youtube_id = url.match(/watch\?v=(.*?)(?:(&|$))/)[1];
 
     var api_url = 
       "http://api.convert2mp3.cc/check.php?api=true&v="
